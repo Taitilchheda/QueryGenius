@@ -352,9 +352,108 @@ pytest -q
 
 Add your preferred license file before distribution.
 
----
+## 20. Sequence Diagrams
 
-If you want, the next README pass can include:
-- sequence diagrams for API and retrieval internals
-- benchmark tables for CPU vs RTX 3060
-- deployment profile for LAN usage (single-machine + multi-user)
+### API Request Lifecycle (`/chat`)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant UI as Web UI
+    participant API as FastAPI
+    participant RAG as RAGEngine
+    participant IDX as FAISS Index
+    participant DB as SQLite (app.db)
+
+    UI->>API: POST /chat {question, session_id, top_k}
+    API->>RAG: ask(question, top_k, profile)
+    RAG->>IDX: semantic search + rerank
+    IDX-->>RAG: top chunks
+    RAG-->>API: answer + citations + latency
+    API->>DB: persist message + update chat timestamp
+    API-->>UI: ChatResponse
+```
+
+### Retrieval Internals
+
+```mermaid
+flowchart TD
+    A[User Query] --> B[Query normalization]
+    B --> C[Embedding model]
+    C --> D[FAISS top-N semantic candidates]
+    B --> E[Lexical overlap candidates]
+    D --> F[Candidate merge]
+    E --> F
+    F --> G[Rerank: semantic + lexical + profile boosts]
+    G --> H[Top-k chunks]
+    H --> I[Generation / deterministic template / fallback]
+    I --> J[Answer + citations]
+```
+
+## 21. Benchmark Table Templates (CPU vs RTX 3060)
+
+Use this table format to track performance after changes.
+
+### Inference Benchmark Template
+
+| Profile | Model | Device | top_k | Avg Retrieval (ms) | Avg Generation (ms) | Avg Total (ms) | Notes |
+|---|---|---|---:|---:|---:|---:|---|
+| balanced | Qwen2.5-3B-Instruct | RTX 3060 | 5 | - | - | - | |
+| math | Qwen2.5-3B-Instruct | RTX 3060 | 5 | - | - | - | |
+| diagram | Qwen2.5-3B-Instruct | RTX 3060 | 5 | - | - | - | |
+| balanced | Qwen2.5-3B-Instruct | CPU | 5 | - | - | - | |
+| math | Qwen2.5-3B-Instruct | CPU | 5 | - | - | - | |
+| diagram | Qwen2.5-3B-Instruct | CPU | 5 | - | - | - | |
+
+### Retrieval Quality Template
+
+| Dataset | Device | Recall@1 | Recall@3 | Recall@5 | Avg Total Latency (ms) |
+|---|---|---:|---:|---:|---:|
+| `data/eval/eval_questions.json` | RTX 3060 | - | - | - | - |
+| `data/eval/eval_questions.json` | CPU | - | - | - | - |
+
+## 22. LAN Deployment Profiles
+
+### Profile A: Single-Machine (Local Only)
+- Use case: one user, local desktop/laptop.
+- Command:
+  - `uvicorn src.api:app --reload --host 127.0.0.1 --port 8000`
+- Access:
+  - `http://127.0.0.1:8000`
+
+### Profile B: Multi-User on Local Network
+- Use case: one GPU host serving multiple users in same LAN.
+- Command:
+  - `uvicorn src.api:app --host 0.0.0.0 --port 8000 --workers 1`
+- Access:
+  - `http://<HOST_LAN_IP>:8000`
+- Windows Firewall:
+  - Allow inbound TCP on port `8000`.
+- Notes:
+  - Keep workers at `1` if model loading is heavy and GPU memory constrained.
+  - Use strong account passwords for shared LAN usage.
+
+### Profile C: Production-Like Reverse Proxy (Optional)
+- Place Nginx/Caddy in front of FastAPI.
+- Terminate TLS at proxy.
+- Restrict origin/IP ranges for internal network.
+
+## 23. Screenshots
+
+Screenshots can be stored under:
+- `docs/screenshots/`
+
+Suggested files:
+- `docs/screenshots/dashboard.png` (home + sidebar)
+- `docs/screenshots/chat-formula.png` (formula rendering)
+- `docs/screenshots/chat-diagram.png` (diagram + zoom modal)
+- `docs/screenshots/account-menu.png` (account/settings/logout)
+
+Markdown embedding template:
+
+```md
+![Dashboard](docs/screenshots/dashboard.png)
+![Formula Rendering](docs/screenshots/chat-formula.png)
+![Diagram Rendering](docs/screenshots/chat-diagram.png)
+![Account Menu](docs/screenshots/account-menu.png)
+```
