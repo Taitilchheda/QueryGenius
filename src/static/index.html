@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QueryGenius</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <aside class="sidebar">
+      <header class="brand-row">
+        <div>
+          <h1>QueryGenius</h1>
+          <p>Local RAG with citations</p>
+        </div>
+      </header>
+
+      <section class="panel uploader-panel">
+        <h2>Documents</h2>
+        <input id="fileInput" type="file" multiple accept=".txt,.md,.pdf">
+        <div class="row two">
+          <button id="uploadBtn" type="button">Upload</button>
+          <button id="ingestBtn" type="button" class="secondary">Index</button>
+        </div>
+        <button id="refreshDocsBtn" type="button" class="ghost">Refresh List</button>
+        <p id="uploadStatus" class="status"></p>
+      </section>
+
+      <section class="panel docs-panel">
+        <h2>Indexed Files</h2>
+        <ul id="docsList" class="scroll-list"></ul>
+      </section>
+
+      <section class="panel history-panel">
+        <div class="section-head">
+          <h2>Chats</h2>
+          <div class="row compact">
+            <button id="newSessionBtn" type="button" class="ghost">New</button>
+            <button id="toggleArchiveBtn" type="button" class="ghost">Archived</button>
+          </div>
+        </div>
+        <ul id="sessionsList" class="scroll-list sessions"></ul>
+      </section>
+    </aside>
+
+    <section class="chat-area">
+      <header class="chat-header">
+        <div class="chat-meta">
+          <h2>Chat</h2>
+          <p>Session: <span id="sessionLabel">none</span></p>
+        </div>
+
+        <div class="chat-controls">
+          <label>
+            Top K
+            <input id="topKInput" type="number" min="1" max="20" value="5">
+          </label>
+          <label>
+            Mode
+            <select id="profileInput">
+              <option value="balanced">Balanced</option>
+              <option value="math">Math</option>
+              <option value="diagram">Diagram</option>
+            </select>
+          </label>
+          <div class="account-wrap">
+            <button id="accountBtn" type="button" class="account-btn">Account</button>
+            <div id="accountMenu" class="account-menu hidden">
+              <div id="accountUserPane" class="menu-pane hidden">
+                <div class="menu-title">My Account</div>
+                <div id="userLabel" class="menu-email"></div>
+                <button id="menuSettingsBtn" type="button" class="menu-item">Settings</button>
+                <button id="logoutBtn" type="button" class="menu-item danger">Logout</button>
+              </div>
+              <div id="accountGuestPane" class="menu-pane hidden">
+                <div class="menu-title">Welcome</div>
+                <button id="menuLoginBtn" type="button" class="menu-item">Sign In</button>
+                <button id="menuRegisterBtn" type="button" class="menu-item">Register</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section id="chatMessages" class="chat-messages"></section>
+
+      <form id="chatForm" class="composer">
+        <textarea id="questionInput" rows="1" placeholder="Ask questions from your indexed documents..." required></textarea>
+        <button id="sendBtn" type="submit">Ask</button>
+      </form>
+    </section>
+  </main>
+
+  <div id="authModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="authModalTitle">Sign In</h3>
+        <button id="authModalClose" type="button" class="icon-close">×</button>
+      </div>
+      <input id="emailInput" type="email" placeholder="Email">
+      <input id="passwordInput" type="password" placeholder="Password">
+      <div class="row two">
+        <button id="loginBtn" type="button">Login</button>
+        <button id="registerBtn" type="button" class="secondary">Register</button>
+      </div>
+      <p id="authStatus" class="status"></p>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3>Settings</h3>
+        <button id="settingsModalClose" type="button" class="icon-close">×</button>
+      </div>
+      <p class="settings-note">These preferences update your chat defaults in this browser.</p>
+      <label>
+        Default Top K
+        <input id="settingsTopK" type="number" min="1" max="20" value="5">
+      </label>
+      <label>
+        Default Mode
+        <select id="settingsMode">
+          <option value="balanced">Balanced</option>
+          <option value="math">Math</option>
+          <option value="diagram">Diagram</option>
+        </select>
+      </label>
+      <button id="saveSettingsBtn" type="button">Save Settings</button>
+    </div>
+  </div>
+
+  <div id="diagramZoomModal" class="modal hidden">
+    <div class="zoom-card">
+      <div class="zoom-head">
+        <h3>Diagram</h3>
+        <button id="diagramZoomClose" type="button" class="icon-close">×</button>
+      </div>
+      <div id="diagramZoomBody" class="zoom-body"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

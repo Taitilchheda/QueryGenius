@@ -1,0 +1,15 @@
+Basic Algebra Overview
+
+Algebra uses symbols and variables to represent numbers in equations.
+A variable is often written as x, y, or n.
+
+A linear equation has the form ax + b = c where a, b, and c are constants.
+To solve for x, isolate the variable by performing inverse operations on both sides.
+
+Example:
+2x + 3 = 11
+2x = 8
+x = 4
+
+Slope-intercept form is y = mx + b.
+The value m is the slope and b is the y-intercept.

@@ -1,52 +1,360 @@
-# QueryGenius: Large Language Model Q&A Assistant
+# QueryGenius v2
 
+QueryGenius is a local-first Retrieval-Augmented Generation (RAG) assistant for document Q&A with citations, math rendering, and diagram rendering.
 
-QueryGenius is an advanced Natural Language Processing (NLP) question-answering (Q&A) assistant designed to provide accurate responses to user queries. Leveraging state-of-the-art language models and efficient query processing techniques, QueryGenius offers a seamless and intuitive user experience for accessing information.
+It is designed for:
+- Windows + Python 3.10+
+- RTX 3060 12GB (CUDA) with CPU fallback
+- Offline runtime after first model download
 
-![QueryGenius Demo](insert_image_url_here)
+## 1. What You Get
 
-## Features
+- Local document ingestion: `.txt`, `.md`, `.pdf`
+- Chunking + embeddings + FAISS indexing
+- FastAPI backend with web UI
+- Session/chat management with archive/delete
+- Local auth (register/login/logout)
+- Retrieval with source citations (`file + chunk + score`)
+- Diagram responses (Mermaid + fallback renderer)
+- Formula responses rendered with KaTeX
+- Evaluation script: Recall@1/3/5 + latency report
 
-- **Advanced NLP Capabilities**: QueryGenius utilizes cutting-edge language models to understand and process natural language queries with high accuracy.
-  
-- **Interactive Query Interface**: With an intuitive query interface powered by Gradio, users can effortlessly input their questions and receive instant responses.
+## 2. Repository Layout
 
-- **Efficient Document Indexing**: QueryGenius's document indexing and retrieval system ensures fast and accurate search results, enabling users to access relevant information quickly.
+```text
+querygenius-v2/
+  README.md
+  requirements.txt
+  .env.example
+  data/
+    raw/               # source docs
+    processed/         # chunks, db, reports
+    index/             # faiss + metadata
+    eval/              # eval set + reports
+  src/
+    __init__.py
+    ingest.py          # parsing + chunking + indexing
+    rag.py             # retrieval + answer generation
+    api.py             # FastAPI app + auth/chat endpoints
+    eval.py            # evaluation runner
+    utils.py           # shared models/helpers
+    static/
+      index.html
+      styles.css
+      app.js
+  tests/
+    test_rag.py
+```
 
-- **Customizable and Extensible**: QueryGenius's modular architecture allows for easy customization and extension, making it adaptable to various use cases and domains.
+## 3. End-to-End Pipeline
 
-## Getting Started
+```text
+Raw files -> Parse -> Chunk -> Embed -> FAISS index
+                                      |
+                                Query embedding
+                                      |
+                      Hybrid retrieval + reranking
+                                      |
+                         Answer generation/fallback
+                                      |
+                          Citation-rich response
+```
 
-To get started with QueryGenius, follow these simple steps:
+## 4. Quick Start (Windows)
 
-1. **Clone the Repository**: `git clone https://github.com/your_username/querygenius.git`
+```powershell
+cd querygenius-v2
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install --upgrade pip
+pip install -r requirements.txt
+copy .env.example .env
+```
 
-2. **Install Dependencies**: `pip install -r requirements.txt`
+### Add documents
+Place your files in `data/raw/`.
 
-3. **Run QueryGenius**: `python querygenius.py`
+### Build index
+```powershell
+python -m src.ingest --rebuild
+```
 
-4. **Access QueryGenius**: Open your web browser and navigate to `http://localhost:7878` to access QueryGenius's query interface.
+### Start API + UI
+```powershell
+uvicorn src.api:app --reload
+```
 
-## Usage
+Open:
+- `http://127.0.0.1:8000/`
 
-QueryGenius's usage is straightforward:
+## 5. Runtime Artifacts
 
-1. Input your question or query in the provided text box.
-2. Press the "Ask" button to submit your query.
-3. QueryGenius will process your query and display the most relevant response.
+After ingestion, QueryGenius creates:
+- `data/processed/chunks.jsonl` (chunk metadata + content)
+- `data/index/faiss.index` (vector index)
+- `data/index/metadata.json` (index metadata)
+- `data/processed/app.db` (users/chats/messages)
 
-## Example
+## 6. Retrieval and Generation Strategy
 
-Here's an example of how to use QueryGenius:
+### Retrieval
+QueryGenius uses hybrid retrieval:
+- Semantic vector search (FAISS)
+- Lexical overlap candidates
+- Reranking with profile-aware boosts
+- Optional source-focus to reduce cross-document mixing
 
-![QueryGenius Example](insert_example_image_url_here)
+### Profiles
+The system resolves profile automatically from query intent:
+- `balanced`: general QA
+- `math`: equations, derivations, formulas
+- `diagram`: architectures, block diagrams, flow diagrams
 
-## Contributions
+### Answering behavior
+- If LLM is available: grounded generation from retrieved context
+- If LLM unavailable/weak: extractive fallback
+- For known intents (CNN/LSTM/Transformer/GAN/BCE/Backprop/etc.), deterministic templates are used for quality and formatting consistency
 
-Contributions to QueryGenius are welcome! Please feel free to open a new issue or submit a pull request for any improvements or bug fixes,follow these guidelines:
+## 7. API Reference
 
-- Fork the repository.
-- Create a new branch for your feature or fix: `git checkout -b feature-name`
-- Make your changes and commit them: `git commit -am 'Add new feature'`
-- Push to the branch: `git push origin feature-name`
-- Submit a pull request.
+### Health
+- `GET /health`
+- Returns status + CUDA visibility
+
+### Documents
+- `GET /documents`
+- `POST /upload` (multipart, field: `files`)
+- `POST /ingest`
+- `GET /index-info`
+
+### Q&A
+- `POST /ask`
+- `POST /chat` (session-aware)
+
+### Auth
+- `POST /auth/register`
+- `POST /auth/login`
+- `POST /auth/logout`
+- `GET /auth/me`
+
+### Chats
+- `GET /chats?archived=false`
+- `POST /chats`
+- `PATCH /chats/{session_id}`
+- `DELETE /chats/{session_id}`
+- `GET /chats/{session_id}/messages`
+
+### History
+- `GET /history`
+- `GET /history/sessions`
+
+## 8. Request/Response Examples
+
+### Ask
+```bash
+curl -X POST "http://127.0.0.1:8000/ask" \
+  -H "Content-Type: application/json" \
+  -d '{"question":"What is self-attention?","top_k":5,"retrieval_profile":"balanced"}'
+```
+
+### Chat
+```bash
+curl -X POST "http://127.0.0.1:8000/chat" \
+  -H "Content-Type: application/json" \
+  -d '{"question":"diagram of transformer with self-attention formula","top_k":5}'
+```
+
+### Register/Login
+```bash
+curl -X POST "http://127.0.0.1:8000/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com","password":"strong_password"}'
+```
+
+```bash
+curl -X POST "http://127.0.0.1:8000/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com","password":"strong_password"}'
+```
+
+## 9. Web UI Features
+
+- Document upload and index rebuild
+- Document list with scroll handling
+- Chat history list with archive/delete icon actions
+- Session switching and persistent history
+- Account menu (guest vs signed-in state)
+- Formula rendering via KaTeX
+- Diagram rendering via Mermaid with fallback
+- Diagram zoom modal on click
+- Typewriter reveal for assistant messages
+
+## 10. Environment Variables (`.env`)
+
+### Embeddings
+- `QG_EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2`
+- `QG_EMBEDDING_DEVICE=cuda|cpu`
+- `QG_USE_HASH_EMBEDDINGS=0|1`
+
+### Generation
+- `QG_ENABLE_LLM=1|0`
+- `QG_LLM_MODEL=Qwen/Qwen2.5-3B-Instruct` (default in current setup)
+- `QG_MAX_NEW_TOKENS=160`
+- `QG_MAX_NEW_TOKENS_DIAGRAM=280`
+- `QG_TEMPERATURE=0.0`
+- `QG_TOP_P=1.0`
+
+### Context Budget
+- `QG_MAX_CONTEXT_CHARS=12000`
+- `QG_MAX_CHUNK_CONTEXT_CHARS=2000`
+
+### Grounding / Retrieval Quality
+- `QG_STRICT_GROUNDED=1`
+- `QG_MIN_RETRIEVAL_SCORE=0.18`
+- `QG_MIN_QUERY_OVERLAP=0.22`
+- `QG_ENFORCE_SOURCE_FOCUS=1`
+
+### OCR for scanned PDFs
+- `QG_ENABLE_OCR=1|0`
+- `QG_OCR_MIN_PAGE_CHARS=80`
+- `QG_OCR_MAX_PAGES=40`
+- `QG_OCR_DPI=180`
+- `QG_OCR_LANG=eng`
+- `QG_TESSERACT_CMD=` (set absolute path if needed)
+
+## 11. GPU Setup (RTX 3060)
+
+### Verify GPU at runtime
+```bash
+curl http://127.0.0.1:8000/health
+```
+Expected:
+- `"cuda_available": true`
+- `"device": "NVIDIA GeForce RTX 3060"` (or equivalent)
+
+### If CUDA is false
+- Install CUDA-enabled PyTorch in the same `.venv`
+- Confirm NVIDIA driver + CUDA runtime
+- Restart server
+
+## 12. OCR Setup (Windows)
+
+1. Install Tesseract OCR
+2. Add to PATH or set `.env`:
+   - `QG_TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe`
+3. Rebuild index:
+```powershell
+python -m src.ingest --rebuild
+```
+
+## 13. Evaluation
+
+Run:
+```powershell
+python -m src.eval
+```
+
+Input:
+- `data/eval/eval_questions.json`
+
+Output:
+- `Recall@1`
+- `Recall@3`
+- `Recall@5`
+- avg latency (`embedding+retrieval`, `generation`, `total`)
+- JSON report at `data/eval/report.json`
+
+### Eval schema
+```json
+[
+  {
+    "question": "...",
+    "expected_sources": ["filename.pdf"],
+    "expected_keywords": ["..."]
+  }
+]
+```
+
+## 14. Testing
+
+```powershell
+pytest -q
+```
+
+Current coverage validates:
+- retrieval behavior
+- `/ask` fallback flow
+- upload + `/chat` + history persistence
+
+## 15. Troubleshooting
+
+### A) Wrong sources mixed in answers
+- Rebuild index with `--rebuild`
+- Check `GET /index-info`
+- Keep `QG_ENFORCE_SOURCE_FOCUS=1`
+
+### B) Formulas show as plain text
+- Hard refresh (`Ctrl+F5`)
+- Confirm assistant output contains delimiters (`\[ ... \]` / `\( ... \)`)
+- Restart server after updates
+
+### C) Mermaid diagram not rendering
+- Verify internet access to Mermaid CDN
+- Fallback visual diagram should still display
+- Click diagram to open zoom modal
+
+### D) Slow responses
+- Verify CUDA in `/health`
+- Reduce `top_k`
+- Reduce `QG_MAX_NEW_TOKENS`
+- Use smaller/faster model
+
+### E) Auth errors
+- `401`: wrong email/password
+- `409`: email already registered
+- `422`: invalid payload format
+
+## 16. Model Notes and Switching
+
+Default embedding model:
+- `sentence-transformers/all-MiniLM-L6-v2`
+
+Default LLM (current project config):
+- `Qwen/Qwen2.5-3B-Instruct`
+
+Possible alternatives if GPU allows:
+- `microsoft/phi-2`
+- `google/gemma-2b` variants (compatible instruct versions)
+
+To switch:
+1. Update `.env` (`QG_LLM_MODEL=...`)
+2. Restart API
+3. First request downloads model; after that, runs locally/offline
+
+## 17. Security and Data Scope
+
+- All uploaded docs remain local in `data/raw/`
+- FAISS index and chat DB are local files
+- No external vector DB is required
+- CDN assets used by frontend (Mermaid/KaTeX) require internet unless self-hosted
+
+## 18. Development Notes
+
+Useful commands:
+```powershell
+python -m src.ingest --rebuild
+python -m src.eval
+uvicorn src.api:app --reload
+pytest -q
+```
+
+## 19. License / Usage
+
+Add your preferred license file before distribution.
+
+---
+
+If you want, the next README pass can include:
+- sequence diagrams for API and retrieval internals
+- benchmark tables for CPU vs RTX 3060
+- deployment profile for LAN usage (single-machine + multi-user)

@@ -1,0 +1,12 @@
+Algebra Practice Notes
+
+When solving equations, always keep both sides balanced.
+If you add, subtract, multiply, or divide one side, do the same to the other.
+
+Example equation:
+3x - 5 = 16
+3x = 21
+x = 7
+
+Check solutions by substituting back into the original equation.
+Factoring is useful for quadratic expressions, while graphing helps visualize solutions.

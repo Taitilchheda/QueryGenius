@@ -1,0 +1,1 @@
+A Python list stores an ordered mutable collection of items.

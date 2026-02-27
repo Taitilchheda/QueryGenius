@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+data/index/*
+data/processed/chunks.jsonl
+data/eval/report.json
+.env

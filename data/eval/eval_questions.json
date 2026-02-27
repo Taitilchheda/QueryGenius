@@ -1,0 +1,17 @@
+[
+  {
+    "question": "What is the general form of a linear equation?",
+    "expected_sources": ["algebra_basics.txt"],
+    "expected_keywords": ["ax + b = c", "linear equation"]
+  },
+  {
+    "question": "What does a Python list do?",
+    "expected_sources": ["python_basics.txt"],
+    "expected_keywords": ["ordered", "mutable", "collection"]
+  },
+  {
+    "question": "How do you verify a solved algebra equation?",
+    "expected_sources": ["algebra_exercises.txt"],
+    "expected_keywords": ["substituting", "original equation"]
+  }
+]

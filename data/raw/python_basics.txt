@@ -1,0 +1,18 @@
+Python Basics
+
+Python is a high-level programming language with readable syntax.
+Common data types include int, float, str, list, tuple, and dict.
+
+A list stores an ordered collection of items and is mutable.
+Example:
+numbers = [1, 2, 3]
+numbers.append(4)
+
+A dictionary stores key-value pairs.
+Example:
+student = {"name": "Asha", "score": 92}
+
+Functions are defined with the def keyword.
+Example:
+def add(a, b):
+    return a + b
