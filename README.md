@@ -4,8 +4,8 @@ QueryGenius is a local-first RAG assistant for PDF/TXT/MD Q&A with citations, di
 
 ## Screenshots
 
-![Formula Rendering](docs/screenshots/querygenius-formula.png)
-![Diagram + Formula Answer](docs/screenshots/querygenius-gan-diagram.png)
+![Formula Rendering](docs/screenshots/ss1.png)
+![Diagram + Formula Answer](docs/screenshots/ss2.png)
 
 ## Core Features
 
@@ -156,3 +156,77 @@ Look for:
 ```powershell
 pytest -q
 ```
+
+## Next README Pass
+
+If you want, the next README pass can include:
+- sequence diagrams for API and retrieval internals
+- benchmark tables for CPU vs RTX 3060
+- deployment profile for LAN usage (single-machine + multi-user)
+
+## Sequence Diagrams
+
+### API Flow (`/chat`)
+
+```mermaid
+sequenceDiagram
+    participant UI as Web UI
+    participant API as FastAPI
+    participant RAG as RAGEngine
+    participant IDX as FAISS
+    participant DB as SQLite
+    UI->>API: POST /chat
+    API->>RAG: ask(question, top_k, profile)
+    RAG->>IDX: retrieve candidates
+    IDX-->>RAG: top chunks
+    RAG-->>API: answer + citations
+    API->>DB: persist chat message
+    API-->>UI: response JSON
+```
+
+### Retrieval Internals
+
+```mermaid
+flowchart TD
+  A[Query] --> B[Embedding]
+  A --> C[Lexical terms]
+  B --> D[FAISS semantic candidates]
+  C --> E[Lexical candidates]
+  D --> F[Merge + rerank]
+  E --> F
+  F --> G[Top-k contexts]
+  G --> H[Generation / Template / Fallback]
+  H --> I[Answer + citations]
+```
+
+## Benchmark Table Templates (CPU vs RTX 3060)
+
+| Profile | Model | Device | top_k | Retrieval ms | Generation ms | Total ms |
+|---|---|---|---:|---:|---:|---:|
+| balanced | Qwen2.5-3B-Instruct | RTX 3060 | 5 | - | - | - |
+| math | Qwen2.5-3B-Instruct | RTX 3060 | 5 | - | - | - |
+| diagram | Qwen2.5-3B-Instruct | RTX 3060 | 5 | - | - | - |
+| balanced | Qwen2.5-3B-Instruct | CPU | 5 | - | - | - |
+| math | Qwen2.5-3B-Instruct | CPU | 5 | - | - | - |
+| diagram | Qwen2.5-3B-Instruct | CPU | 5 | - | - | - |
+
+| Eval Set | Device | Recall@1 | Recall@3 | Recall@5 |
+|---|---|---:|---:|---:|
+| `data/eval/eval_questions.json` | RTX 3060 | - | - | - |
+| `data/eval/eval_questions.json` | CPU | - | - | - |
+
+## LAN Deployment Profiles
+
+### Single-machine local
+- Command: `uvicorn src.api:app --reload --host 127.0.0.1 --port 8000`
+- Access: `http://127.0.0.1:8000`
+
+### Multi-user LAN
+- Command: `uvicorn src.api:app --host 0.0.0.0 --port 8000 --workers 1`
+- Access: `http://<HOST_LAN_IP>:8000`
+- Open Windows firewall inbound TCP for port `8000`
+
+### Reverse-proxy (optional)
+- Put Nginx/Caddy in front of FastAPI
+- Terminate TLS at proxy
+- Restrict access to trusted LAN CIDR/IP ranges
