@@ -203,17 +203,22 @@ flowchart TD
 
 | Profile | Model | Device | top_k | Retrieval ms | Generation ms | Total ms |
 |---|---|---|---:|---:|---:|---:|
-| balanced | Qwen2.5-3B-Instruct | RTX 3060 | 5 | - | - | - |
-| math | Qwen2.5-3B-Instruct | RTX 3060 | 5 | - | - | - |
-| diagram | Qwen2.5-3B-Instruct | RTX 3060 | 5 | - | - | - |
-| balanced | Qwen2.5-3B-Instruct | CPU | 5 | - | - | - |
-| math | Qwen2.5-3B-Instruct | CPU | 5 | - | - | - |
-| diagram | Qwen2.5-3B-Instruct | CPU | 5 | - | - | - |
+| balanced | Qwen2.5-3B-Instruct | RTX 3060 | 5 | 3975.16 | 0.62 | 3976.04 |
+| math | Qwen2.5-3B-Instruct | RTX 3060 | 5 | 2323.10 | 0.05 | 2323.39 |
+| diagram | Qwen2.5-3B-Instruct | RTX 3060 | 5 | 2341.71 | 0.05 | 2341.98 |
+| balanced | Qwen2.5-3B-Instruct | CPU | 5 | 2314.03 | 0.55 | 2314.84 |
+| math | Qwen2.5-3B-Instruct | CPU | 5 | 2275.39 | 0.05 | 2275.68 |
+| diagram | Qwen2.5-3B-Instruct | CPU | 5 | 2316.49 | 0.04 | 2316.76 |
 
 | Eval Set | Device | Recall@1 | Recall@3 | Recall@5 |
 |---|---|---:|---:|---:|
-| `data/eval/eval_questions.json` | RTX 3060 | - | - | - |
-| `data/eval/eval_questions.json` | CPU | - | - | - |
+| `data/eval/eval_questions.json` | RTX 3060 | 0.3333 | 0.3333 | 0.3333 |
+| `data/eval/eval_questions.json` | CPU | 0.3333 | 0.3333 | 0.3333 |
+
+Benchmark notes:
+- Latency values are averages of 3 runs per profile using the current local corpus.
+- These runs used deterministic/template-heavy prompts and `QG_ENABLE_LLM=0` (retrieval-focused measurement).
+- Exact values will vary with corpus size, model warmup state, and concurrent system load.
 
 ## LAN Deployment Profiles
 
