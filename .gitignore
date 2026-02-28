@@ -6,5 +6,5 @@ data/index/*
 data/processed/chunks.jsonl
 data/eval/report.json
 .env
-docs/
+docs/architecture
 prework_round1/
